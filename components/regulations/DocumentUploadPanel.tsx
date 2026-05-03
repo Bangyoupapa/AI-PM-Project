@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Trash2, Download } from "lucide-react";
+import { Upload, FileText, Trash2, Download, Cpu } from "lucide-react";
 import { formatDate, formatFileSize } from "@/lib/utils";
 
 interface Document {
@@ -23,6 +23,7 @@ interface DocumentUploadPanelProps {
 export function DocumentUploadPanel({ regulationId, initialDocuments }: DocumentUploadPanelProps) {
   const [documents, setDocuments] = useState<Document[]>(initialDocuments);
   const [uploading, setUploading] = useState(false);
+  const [indexingId, setIndexingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +52,27 @@ export function DocumentUploadPanel({ regulationId, initialDocuments }: Document
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleIndex(docId: string) {
+    setIndexingId(docId);
+    try {
+      const res = await fetch(`/api/regulations/${regulationId}/documents/${docId}/index`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "向量化失敗");
+      }
+      setDocuments((prev) =>
+        prev.map((d) => (d.id === docId ? { ...d, isIndexed: true } : d))
+      );
+      toast.success("向量化完成");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "向量化失敗");
+    } finally {
+      setIndexingId(null);
     }
   }
 
@@ -114,6 +136,18 @@ export function DocumentUploadPanel({ regulationId, initialDocuments }: Document
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0 ml-3">
+                {!doc.isIndexed && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={() => handleIndex(doc.id)}
+                    disabled={indexingId === doc.id}
+                  >
+                    <Cpu className="mr-1 h-3 w-3" />
+                    {indexingId === doc.id ? "向量化中…" : "向量化"}
+                  </Button>
+                )}
                 <a href={`/api/regulations/${regulationId}/documents/${doc.id}`} download>
                   <Button size="icon" variant="ghost" className="h-8 w-8">
                     <Download className="h-4 w-4" />
