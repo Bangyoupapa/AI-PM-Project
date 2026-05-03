@@ -4,7 +4,6 @@ export const config = {
     description: "手機電池法規合規管理平台",
   },
   upload: {
-    dir: process.env.UPLOAD_DIR ?? "uploads",
     maxSizeBytes: 50 * 1024 * 1024, // 50MB
     allowedMimeTypes: [
       "application/pdf",

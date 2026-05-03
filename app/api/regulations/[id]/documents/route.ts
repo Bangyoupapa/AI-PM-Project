@@ -1,41 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/config";
-import formidable from "formidable";
-import fs from "fs";
-import path from "path";
-import { IncomingMessage } from "http";
-import { Readable } from "stream";
+import { put } from "@vercel/blob";
 
 export const runtime = "nodejs";
 
 interface Params {
   params: Promise<{ id: string }>;
-}
-
-async function parseForm(req: NextRequest): Promise<{ file: formidable.File }> {
-  const uploadDir = path.join(process.cwd(), config.upload.dir, "regulations");
-  fs.mkdirSync(uploadDir, { recursive: true });
-
-  const form = formidable({
-    uploadDir,
-    keepExtensions: true,
-    maxFileSize: config.upload.maxSizeBytes,
-  });
-
-  const buffer = Buffer.from(await req.arrayBuffer());
-  const readable = Readable.from(buffer) as unknown as IncomingMessage;
-  readable.headers = Object.fromEntries(req.headers.entries());
-  readable.method = req.method;
-
-  return new Promise((resolve, reject) => {
-    form.parse(readable, (err, _fields, files) => {
-      if (err) return reject(err);
-      const file = Array.isArray(files.file) ? files.file[0] : files.file;
-      if (!file) return reject(new Error("未收到檔案"));
-      resolve({ file });
-    });
-  });
 }
 
 export async function POST(req: NextRequest, { params }: Params) {
@@ -47,28 +18,31 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "找不到此法規" }, { status: 404 });
     }
 
-    const { file } = await parseForm(req);
-    const mimeType = file.mimetype ?? "application/octet-stream";
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
+    if (!file) {
+      return NextResponse.json({ error: "未收到檔案" }, { status: 400 });
+    }
 
+    if (file.size > config.upload.maxSizeBytes) {
+      return NextResponse.json({ error: "檔案超過 50MB 限制" }, { status: 400 });
+    }
+
+    const mimeType = file.type || "application/octet-stream";
     if (!(config.upload.allowedMimeTypes as readonly string[]).includes(mimeType)) {
-      fs.unlinkSync(file.filepath);
       return NextResponse.json({ error: "僅支援 PDF 或 Word 文件" }, { status: 400 });
     }
 
-    const fileName = file.originalFilename ?? path.basename(file.filepath);
-    const destDir = path.join(process.cwd(), config.upload.dir, "regulations", id);
-    fs.mkdirSync(destDir, { recursive: true });
-
-    const destPath = path.join(destDir, fileName);
-    fs.renameSync(file.filepath, destPath);
-
-    const storagePath = path.join(config.upload.dir, "regulations", id, fileName);
+    const blob = await put(`regulations/${id}/${file.name}`, file, {
+      access: "public",
+      contentType: mimeType,
+    });
 
     const doc = await prisma.regulationDocument.create({
       data: {
         regulationId: id,
-        fileName,
-        storagePath,
+        fileName: file.name,
+        storagePath: blob.url,
         mimeType,
         sizeBytes: file.size,
       },
