@@ -1,0 +1,196 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [vector]
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum ComponentCategory {
+  CELL
+  BMS
+  HOUSING
+  CONNECTOR
+  ELECTROLYTE
+  SEPARATOR
+  ANODE
+  CATHODE
+  OTHER
+}
+
+enum ComplianceStatus {
+  PASS
+  FAIL
+  PENDING
+  NOT_APPLICABLE
+  EXPIRED
+}
+
+enum RegulationRegion {
+  EU
+  US
+  JP
+  CN
+  TW
+  GLOBAL
+  OTHER
+}
+
+// ─── Regulations ─────────────────────────────────────────────────────────────
+
+model Regulation {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  name        String
+  nameEn      String?
+  region      RegulationRegion
+  version     String?
+  issuedAt    DateTime?
+  effectiveAt DateTime?
+  expiresAt   DateTime?
+  description String?          @db.Text
+  isActive    Boolean          @default(true)
+
+  documents         RegulationDocument[]
+  substanceLimits   SubstanceLimit[]
+  complianceRecords ComplianceRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RegulationDocument {
+  id           String     @id @default(cuid())
+  regulationId String
+  regulation   Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+
+  fileName    String
+  storagePath String
+  mimeType    String
+  sizeBytes   Int
+  description String?
+
+  isIndexed Boolean   @default(false)
+  indexedAt DateTime?
+
+  chunks RegulationChunk[]
+
+  uploadedAt DateTime @default(now())
+
+  @@index([regulationId])
+}
+
+model RegulationChunk {
+  id         String             @id @default(cuid())
+  documentId String
+  document   RegulationDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  chunkIndex Int
+  content    String                        @db.Text
+  embedding  Unsupported("vector(1536)")?
+
+  createdAt DateTime @default(now())
+
+  @@index([documentId])
+}
+
+model SubstanceLimit {
+  id           String     @id @default(cuid())
+  regulationId String
+  regulation   Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+
+  substanceName String
+  substanceCas  String?
+  limitValue    Float?
+  limitUnit     String?
+  notes         String?
+
+  createdAt DateTime @default(now())
+
+  @@index([regulationId])
+}
+
+// ─── Suppliers & Components ──────────────────────────────────────────────────
+
+model Supplier {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  code         String? @unique
+  country      String?
+  contactName  String?
+  contactEmail String?
+
+  components Component[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Component {
+  id            String            @id @default(cuid())
+  partNumber    String            @unique
+  name          String
+  nameEn        String?
+  category      ComponentCategory
+  supplierId    String?
+  supplier      Supplier?         @relation(fields: [supplierId], references: [id])
+  material      String?
+  description   String?           @db.Text
+  unitOfMeasure String?           @default("pcs")
+  isActive      Boolean           @default(true)
+  importBatchId String?
+
+  complianceRecords ComplianceRecord[]
+  importLog         ComponentImportLog? @relation(fields: [importBatchId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([partNumber])
+  @@index([category])
+  @@index([supplierId])
+}
+
+model ComponentImportLog {
+  id          String  @id @default(cuid())
+  fileName    String
+  totalRows   Int
+  successRows Int
+  failedRows  Int
+  errors      Json?
+  importedBy  String?
+
+  components Component[]
+
+  importedAt DateTime @default(now())
+}
+
+// ─── Compliance Records ───────────────────────────────────────────────────────
+
+model ComplianceRecord {
+  id           String           @id @default(cuid())
+  componentId  String
+  component    Component        @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  regulationId String
+  regulation   Regulation       @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+
+  status       ComplianceStatus @default(PENDING)
+  testDate     DateTime?
+  expiryDate   DateTime?
+  testLab      String?
+  reportNumber String?
+  notes        String?          @db.Text
+  testedBy     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([componentId, regulationId])
+  @@index([status])
+  @@index([componentId])
+  @@index([regulationId])
+}

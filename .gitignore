@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisma
+
+# uploaded regulation documents (large PDFs — manage separately)
+/uploads/regulations/*/
+/uploads/regulations/*.pdf
+
+# stale directory from project init
+/AIPM-Final-1
