@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MOCK_MODE, getMockResponse } from "@/lib/ai";
+import { MOCK_MODE, getMockResponse, getModel, SYSTEM_PROMPT } from "@/lib/ai";
+import { generateText } from "ai";
+import { config } from "@/config";
 
 export const runtime = "nodejs";
 
@@ -13,16 +15,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ role: "assistant", content: text });
     }
 
-    // Real LLM implementation (when AI_API_KEY is set):
-    // const { searchChunks } = await import("@/lib/rag/search");
-    // const chunks = await searchChunks([], config.rag.topK);
-    // const context = chunks.map(c => `[${c.regulationCode} / ${c.fileName}]\n${c.content}`).join("\n\n---\n\n");
-    // const { streamText } = await import("ai");
-    // const { model } = await import("@/lib/ai");
-    // const result = streamText({ model, system: SYSTEM_PROMPT + context, messages });
-    // return result.toDataStreamResponse();
+    // RAG: 抓最相關的法規 chunks 當作 context
+    const { searchChunks } = await import("@/lib/rag/search");
+    const chunks = await searchChunks([], config.rag.topK);
+    const context = chunks.length > 0
+      ? chunks.map((c) => `[${c.regulationCode} / ${c.fileName}]\n${c.content}`).join("\n\n---\n\n")
+      : "（目前尚無向量化的法規文件，請先上傳並向量化法規 PDF）";
 
-    return NextResponse.json({ error: "AI_API_KEY 未設定" }, { status: 503 });
+    const model = getModel();
+    const { text } = await generateText({
+      model,
+      system: SYSTEM_PROMPT + "\n\n以下是相關法規文件內容：\n\n" + context,
+      messages,
+    });
+
+    return NextResponse.json({ role: "assistant", content: text });
   } catch (error) {
     console.error("[POST /api/ai/chat]", error);
     return NextResponse.json({ error: "AI 查詢失敗" }, { status: 500 });

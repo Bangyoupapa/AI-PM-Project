@@ -1,6 +1,24 @@
-import { config } from "@/config";
+import { createOpenAI } from "@ai-sdk/openai";
 
-export const MOCK_MODE = config.rag.mockMode;
+export const MOCK_MODE = process.env.MOCK_AI === "true";
+
+// Real OpenAI provider — only instantiated when not in mock mode
+export function getModel() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY 未設定");
+  const openai = createOpenAI({ apiKey });
+  return openai("gpt-4o-mini");
+}
+
+export const SYSTEM_PROMPT = `你是一位專業的電池法規合規查詢助理，服務對象為研發、採購、QA 工程師。
+你的回答必須：
+1. 以繁體中文回答
+2. 根據提供的法規文件內容作答，並標明來源
+3. 若文件中沒有相關資訊，明確說明「根據現有文件無法確認」
+4. 回答要精確，包含具體數值（如 ppm、限值）
+5. 格式清楚，使用條列或表格
+
+你有以下法規資料：RoHS、UN38.3、REACH、EU Battery Regulation 2023。`;
 
 export async function getMockResponse(prompt: string): Promise<string> {
   await new Promise((r) => setTimeout(r, 800));
