@@ -6,7 +6,10 @@ export const MOCK_MODE = process.env.MOCK_AI === "true";
 export function getModel() {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY 未設定");
-  const openai = createOpenAI({ apiKey });
+  const openai = createOpenAI({
+    apiKey,
+    organization: process.env.OPENAI_ORGANIZATION_ID,
+  });
   return openai("gpt-4o-mini");
 }
 
