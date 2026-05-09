@@ -27,18 +27,21 @@ export async function GET(_req: NextRequest, { params }: Params) {
 export async function PUT(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
-    const body = await req.json();
+    const body = await req.json() as Record<string, unknown>;
     const parsed = upsertComplianceSchema.partial().safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
     const { testDate, expiryDate, ...rest } = parsed.data;
+    // isAiSuggested 可以直接從 body 傳入（不走 upsertComplianceSchema）
+    const isAiSuggested = typeof body.isAiSuggested === "boolean" ? body.isAiSuggested : undefined;
     const record = await prisma.complianceRecord.update({
       where: { id },
       data: {
         ...rest,
         ...(testDate !== undefined ? { testDate: testDate ? new Date(testDate) : null } : {}),
         ...(expiryDate !== undefined ? { expiryDate: expiryDate ? new Date(expiryDate) : null } : {}),
+        ...(isAiSuggested !== undefined ? { isAiSuggested } : {}),
       },
     });
     return NextResponse.json(record);

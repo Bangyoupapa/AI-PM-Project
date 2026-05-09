@@ -16,13 +16,19 @@ export const createComponentSchema = z.object({
 export const updateComponentSchema = createComponentSchema.partial();
 
 export const importRowSchema = z.object({
-  partNumber: z.string().min(1, "料號為必填"),
-  name: z.string().min(1, "料件名稱為必填"),
-  nameEn: z.string().optional(),
-  category: z.enum(CATEGORIES, { error: "類別無效，請使用：電芯/BMS/外殼/接頭/電解液/隔離膜/負極/正極/其他" }),
+  partNumber:   z.string().min(1, "料號為必填"),
+  name:         z.string().min(1, "料件名稱為必填"),
+  nameEn:       z.string().optional(),
+  category:     z.enum(CATEGORIES, { error: "類別無效，請使用：電芯/BMS/外殼/接頭/電解液/隔離膜/負極/正極/其他" }),
   supplierName: z.string().optional(),
-  material: z.string().optional(),
-  description: z.string().optional(),
+  material:     z.string().optional(),
+  description:  z.string().optional(),
+  // 物質含量欄位（AI 分析用）
+  leadPpm:      z.number().nonnegative().optional(),
+  cadmiumPpm:   z.number().nonnegative().optional(),
+  mercuryPpm:   z.number().nonnegative().optional(),
+  chromiumPpm:  z.number().nonnegative().optional(),
+  hasSvhc:      z.boolean().optional(),
 });
 
 export type CreateComponentInput = z.infer<typeof createComponentSchema>;

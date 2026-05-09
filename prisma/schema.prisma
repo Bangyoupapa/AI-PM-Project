@@ -144,6 +144,13 @@ model Component {
   isActive      Boolean           @default(true)
   importBatchId String?
 
+  // 物質含量（用於 AI 合規分析）
+  leadPpm     Float?   // 鉛 Pb (ppm)
+  cadmiumPpm  Float?   // 鎘 Cd (ppm)
+  mercuryPpm  Float?   // 汞 Hg (ppm)
+  chromiumPpm Float?   // 六價鉻 Cr(VI) (ppm)
+  hasSvhc     Boolean? // 是否含 SVHC 物質
+
   complianceRecords ComplianceRecord[]
   importLog         ComponentImportLog? @relation(fields: [importBatchId], references: [id])
 
@@ -185,6 +192,10 @@ model ComplianceRecord {
   reportNumber String?
   notes        String?          @db.Text
   testedBy     String?
+
+  // AI 分析
+  isAiSuggested Boolean @default(false)
+  aiReasoning   String? @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

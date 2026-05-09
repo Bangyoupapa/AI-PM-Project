@@ -7,13 +7,18 @@ const confirmSchema = z.object({
   importedBy: z.string().optional(),
   rows: z.array(
     z.object({
-      partNumber: z.string(),
-      name: z.string(),
-      nameEn: z.string().optional(),
-      category: z.enum(["CELL", "BMS", "HOUSING", "CONNECTOR", "ELECTROLYTE", "SEPARATOR", "ANODE", "CATHODE", "OTHER"]),
+      partNumber:   z.string(),
+      name:         z.string(),
+      nameEn:       z.string().optional(),
+      category:     z.enum(["CELL", "BMS", "HOUSING", "CONNECTOR", "ELECTROLYTE", "SEPARATOR", "ANODE", "CATHODE", "OTHER"]),
       supplierName: z.string().optional(),
-      material: z.string().optional(),
-      description: z.string().optional(),
+      material:     z.string().optional(),
+      description:  z.string().optional(),
+      leadPpm:      z.number().optional(),
+      cadmiumPpm:   z.number().optional(),
+      mercuryPpm:   z.number().optional(),
+      chromiumPpm:  z.number().optional(),
+      hasSvhc:      z.boolean().optional(),
     })
   ),
 });
@@ -29,6 +34,7 @@ export async function POST(req: NextRequest) {
     const { fileName, importedBy, rows } = parsed.data;
     let successRows = 0;
     const errors: { row: number; message: string }[] = [];
+    const importedComponentIds: string[] = [];
 
     const log = await prisma.componentImportLog.create({
       data: {
@@ -53,11 +59,12 @@ export async function POST(req: NextRequest) {
           supplierId = supplier.id;
         }
 
-        await prisma.component.upsert({
+        const component = await prisma.component.upsert({
           where: { partNumber: rest.partNumber },
           create: { ...rest, supplierId, importBatchId: log.id },
           update: { ...rest, supplierId },
         });
+        importedComponentIds.push(component.id);
         successRows++;
       } catch (err) {
         errors.push({ row: i + 1, message: err instanceof Error ? err.message : "未知錯誤" });
@@ -69,7 +76,13 @@ export async function POST(req: NextRequest) {
       data: { successRows, failedRows: errors.length, errors },
     });
 
-    return NextResponse.json({ success: true, successRows, failedRows: errors.length, errors });
+    return NextResponse.json({
+      success: true,
+      successRows,
+      failedRows: errors.length,
+      errors,
+      componentIds: importedComponentIds,  // 回傳給前端觸發 AI 分析
+    });
   } catch (error) {
     console.error("[POST /api/import/confirm]", error);
     return NextResponse.json({ error: "匯入失敗" }, { status: 500 });

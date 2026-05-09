@@ -28,6 +28,8 @@ export default async function CompliancePage() {
         reportNumber: true,
         notes: true,
         testedBy: true,
+        isAiSuggested: true,
+        aiReasoning: true,
       },
     }),
   ]);

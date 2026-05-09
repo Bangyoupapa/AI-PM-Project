@@ -9,6 +9,11 @@ const CATEGORY_REVERSE: Record<string, string> = Object.fromEntries(
   Object.entries(COMPONENT_CATEGORY_LABELS).map(([k, v]) => [v, k])
 );
 
+function parseFloat_(v: string): number | undefined {
+  const n = parseFloat(v);
+  return isNaN(n) ? undefined : n;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -26,13 +31,18 @@ export async function POST(req: NextRequest) {
 
     const header = rows[0] as unknown as string[];
     const colIndex = {
-      partNumber: header.indexOf("料號"),
-      name: header.indexOf("料件名稱"),
-      nameEn: header.indexOf("英文名稱"),
-      category: header.indexOf("類別"),
+      partNumber:   header.indexOf("料號"),
+      name:         header.indexOf("料件名稱"),
+      nameEn:       header.indexOf("英文名稱"),
+      category:     header.indexOf("類別"),
       supplierName: header.indexOf("供應商名稱"),
-      material: header.indexOf("材質描述"),
-      description: header.indexOf("備註"),
+      material:     header.indexOf("材質描述"),
+      leadPpm:      header.indexOf("鉛含量(ppm)"),
+      cadmiumPpm:   header.indexOf("鎘含量(ppm)"),
+      mercuryPpm:   header.indexOf("汞含量(ppm)"),
+      chromiumPpm:  header.indexOf("六價鉻含量(ppm)"),
+      hasSvhc:      header.indexOf("含SVHC(是/否)"),
+      description:  header.indexOf("備註"),
     };
 
     if (colIndex.partNumber === -1 || colIndex.name === -1 || colIndex.category === -1) {
@@ -49,14 +59,22 @@ export async function POST(req: NextRequest) {
       const rawCategory = row[colIndex.category] ?? "";
       const category = CATEGORY_REVERSE[rawCategory] ?? rawCategory;
 
+      const svhcRaw = (row[colIndex.hasSvhc] ?? "").trim();
+      const hasSvhc = svhcRaw === "是" ? true : svhcRaw === "否" ? false : undefined;
+
       const parsed = importRowSchema.safeParse({
-        partNumber: row[colIndex.partNumber],
-        name: row[colIndex.name],
-        nameEn: row[colIndex.nameEn] || undefined,
+        partNumber:   row[colIndex.partNumber],
+        name:         row[colIndex.name],
+        nameEn:       row[colIndex.nameEn] || undefined,
         category,
         supplierName: row[colIndex.supplierName] || undefined,
-        material: row[colIndex.material] || undefined,
-        description: row[colIndex.description] || undefined,
+        material:     row[colIndex.material] || undefined,
+        description:  colIndex.description >= 0 ? row[colIndex.description] || undefined : undefined,
+        leadPpm:      colIndex.leadPpm >= 0 ? parseFloat_(row[colIndex.leadPpm]) : undefined,
+        cadmiumPpm:   colIndex.cadmiumPpm >= 0 ? parseFloat_(row[colIndex.cadmiumPpm]) : undefined,
+        mercuryPpm:   colIndex.mercuryPpm >= 0 ? parseFloat_(row[colIndex.mercuryPpm]) : undefined,
+        chromiumPpm:  colIndex.chromiumPpm >= 0 ? parseFloat_(row[colIndex.chromiumPpm]) : undefined,
+        hasSvhc,
       });
 
       if (parsed.success) {
