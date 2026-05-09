@@ -106,7 +106,7 @@ export default async function PartDetailPage({ params }: Props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {component.complianceRecords.map((record) => (
+                    {component.complianceRecords.map((record: (typeof component.complianceRecords)[number]) => (
                       <tr key={record.id} className="border-b last:border-0">
                         <td className="px-4 py-2">
                           <Link href={`/regulations/${record.regulation.id}`} className="font-medium text-primary hover:underline">

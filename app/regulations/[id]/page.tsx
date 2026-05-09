@@ -128,7 +128,7 @@ export default async function RegulationDetailPage({ params }: Props) {
             <CardContent>
               <DocumentUploadPanel
                 regulationId={id}
-                initialDocuments={regulation.documents.map((d) => ({
+                initialDocuments={regulation.documents.map((d: (typeof regulation.documents)[number]) => ({
                   ...d,
                   uploadedAt: d.uploadedAt.toISOString(),
                 }))}

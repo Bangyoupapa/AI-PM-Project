@@ -52,10 +52,11 @@ export default async function PartsPage() {
             </tr>
           </thead>
           <tbody>
-            {components.map((comp) => {
-              const failCount = comp.complianceRecords.filter((r) => r.status === "FAIL").length;
-              const passCount = comp.complianceRecords.filter((r) => r.status === "PASS").length;
-              const pendingCount = comp.complianceRecords.filter((r) => r.status === "PENDING").length;
+            {components.map((comp: (typeof components)[number]) => {
+              type CR = (typeof comp.complianceRecords)[number];
+              const failCount = comp.complianceRecords.filter((r: CR) => r.status === "FAIL").length;
+              const passCount = comp.complianceRecords.filter((r: CR) => r.status === "PASS").length;
+              const pendingCount = comp.complianceRecords.filter((r: CR) => r.status === "PENDING").length;
               return (
                 <tr key={comp.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">

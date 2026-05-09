@@ -45,7 +45,7 @@ export default async function RegulationsPage() {
             </tr>
           </thead>
           <tbody>
-            {regulations.map((reg) => (
+            {regulations.map((reg: (typeof regulations)[number]) => (
               <tr key={reg.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                 <td className="px-4 py-3">
                   <Link href={`/regulations/${reg.id}`} className="font-medium text-primary hover:underline">
