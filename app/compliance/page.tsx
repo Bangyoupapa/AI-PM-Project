@@ -32,15 +32,16 @@ export default async function CompliancePage() {
     }),
   ]);
 
-  const serialized = records.map((r) => ({
+  type RawRecord = (typeof records)[number];
+  const serialized = records.map((r: RawRecord) => ({
     ...r,
     testDate: r.testDate?.toISOString().split("T")[0] ?? null,
     expiryDate: r.expiryDate?.toISOString().split("T")[0] ?? null,
   }));
 
-  const passCount = records.filter((r) => r.status === "PASS").length;
-  const failCount = records.filter((r) => r.status === "FAIL").length;
-  const pendingCount = records.filter((r) => r.status === "PENDING").length;
+  const passCount = records.filter((r: RawRecord) => r.status === "PASS").length;
+  const failCount = records.filter((r: RawRecord) => r.status === "FAIL").length;
+  const pendingCount = records.filter((r: RawRecord) => r.status === "PENDING").length;
 
   return (
     <PageShell
