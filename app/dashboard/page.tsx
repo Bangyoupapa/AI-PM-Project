@@ -45,7 +45,7 @@ export default async function DashboardPage() {
     ]);
 
   const statusCounts = Object.fromEntries(
-    statusGroups.map((g) => [g.status, g._count._all])
+    statusGroups.map((g: { status: string; _count: { _all: number } }) => [g.status, g._count._all])
   );
   const total = Object.values(statusCounts).reduce((a, b) => a + b, 0);
   const passRate = total > 0 ? Math.round(((statusCounts.PASS ?? 0) / total) * 100) : 0;
