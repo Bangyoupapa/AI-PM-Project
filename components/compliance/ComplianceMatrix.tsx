@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ComplianceForm } from "./ComplianceForm";
 import { cn, statusLabel, statusColor, categoryLabel } from "@/lib/utils";
-import type { ComplianceStatus, ComponentCategory } from "@prisma/client";
+type ComplianceStatus = "PASS" | "FAIL" | "PENDING" | "NOT_APPLICABLE" | "EXPIRED";
+type ComponentCategory = "CELL" | "BMS" | "HOUSING" | "CONNECTOR" | "ELECTROLYTE" | "SEPARATOR" | "ANODE" | "CATHODE" | "OTHER";
 
 interface Regulation {
   id: string;
