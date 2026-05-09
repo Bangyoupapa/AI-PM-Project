@@ -35,7 +35,7 @@ export async function GET() {
     ]);
 
     const statusCounts = Object.fromEntries(
-      statusGroups.map((g) => [g.status, g._count._all])
+      statusGroups.map((g: { status: string; _count: { _all: number } }) => [g.status, g._count._all])
     );
 
     const total = Object.values(statusCounts).reduce((a, b) => a + b, 0);
