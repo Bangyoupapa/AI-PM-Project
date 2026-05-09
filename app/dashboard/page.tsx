@@ -87,7 +87,7 @@ export default async function DashboardPage() {
                 <p className="text-sm text-muted-foreground">無即將到期的合規紀錄</p>
               ) : (
                 <ul className="space-y-2">
-                  {expiringSoon.map((r) => (
+                  {expiringSoon.map((r: (typeof expiringSoon)[number]) => (
                     <li key={r.id} className="flex items-center justify-between text-sm">
                       <div>
                         <Link href={`/parts/${r.componentId}`} className="font-mono font-medium hover:underline text-primary">
@@ -115,7 +115,7 @@ export default async function DashboardPage() {
                 <p className="text-sm text-muted-foreground">目前無不合格紀錄</p>
               ) : (
                 <ul className="space-y-2">
-                  {failRecords.map((r) => (
+                  {failRecords.map((r: (typeof failRecords)[number]) => (
                     <li key={r.id} className="flex items-center justify-between text-sm">
                       <div>
                         <Link href={`/parts/${r.component.id}`} className="font-mono font-medium hover:underline text-primary">
@@ -153,7 +153,7 @@ export default async function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentRecords.map((r) => (
+                    {recentRecords.map((r: (typeof recentRecords)[number]) => (
                       <tr key={r.id} className="border-b last:border-0">
                         <td className="px-4 py-2 font-mono">
                           <Link href={`/parts/${r.component.id}`} className="text-primary hover:underline">
