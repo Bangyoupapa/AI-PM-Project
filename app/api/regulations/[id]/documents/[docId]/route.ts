@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (!doc) return NextResponse.json({ error: "找不到文件" }, { status: 404 });
 
     if (isRemoteUrl(doc.storagePath)) {
-      // Vercel Blob (private) — fetch server-side with token and stream to client
+      // Vercel Blob (private) — server-side fetch with token, streamed to client
       const blobRes = await fetch(doc.storagePath, {
         headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
       });
