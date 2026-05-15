@@ -33,7 +33,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
     const { testDate, expiryDate, ...rest } = parsed.data;
-    // isAiSuggested 可以直接從 body 傳入（不走 upsertComplianceSchema）
     const isAiSuggested = typeof body.isAiSuggested === "boolean" ? body.isAiSuggested : undefined;
     const record = await prisma.complianceRecord.update({
       where: { id },
@@ -42,6 +41,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
         ...(testDate !== undefined ? { testDate: testDate ? new Date(testDate) : null } : {}),
         ...(expiryDate !== undefined ? { expiryDate: expiryDate ? new Date(expiryDate) : null } : {}),
         ...(isAiSuggested !== undefined ? { isAiSuggested } : {}),
+        // Clear AI suggestion fields when a human confirms or overrides
+        ...(isAiSuggested === false ? { aiSuggestedStatus: null } : {}),
       },
     });
     return NextResponse.json(record);

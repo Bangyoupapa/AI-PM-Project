@@ -57,6 +57,7 @@ export default async function PartsPage() {
               const failCount = comp.complianceRecords.filter((r: CR) => r.status === "FAIL").length;
               const passCount = comp.complianceRecords.filter((r: CR) => r.status === "PASS").length;
               const pendingCount = comp.complianceRecords.filter((r: CR) => r.status === "PENDING").length;
+              const aiPendingCount = comp.complianceRecords.filter((r: CR) => r.status === "AI_PENDING").length;
               return (
                 <tr key={comp.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3">
@@ -81,6 +82,7 @@ export default async function PartsPage() {
                           {failCount > 0 && <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", statusColor("FAIL"))}>{failCount} 不合格</span>}
                           {passCount > 0 && <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", statusColor("PASS"))}>{passCount} 合格</span>}
                           {pendingCount > 0 && <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", statusColor("PENDING"))}>{pendingCount} 待審</span>}
+                          {aiPendingCount > 0 && <span className={cn("rounded px-1.5 py-0.5 text-xs font-medium", statusColor("AI_PENDING"))}>{aiPendingCount} AI待確認</span>}
                         </>
                       )}
                     </div>

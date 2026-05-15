@@ -26,6 +26,7 @@ enum ComplianceStatus {
   PASS
   FAIL
   PENDING
+  AI_PENDING
   NOT_APPLICABLE
   EXPIRED
 }
@@ -194,8 +195,9 @@ model ComplianceRecord {
   testedBy     String?
 
   // AI 分析
-  isAiSuggested Boolean @default(false)
-  aiReasoning   String? @db.Text
+  isAiSuggested    Boolean          @default(false)
+  aiSuggestedStatus ComplianceStatus?
+  aiReasoning      String?          @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

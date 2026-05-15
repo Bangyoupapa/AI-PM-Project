@@ -1,7 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { COMPLIANCE_STATUS_LABELS } from "@/config";
+import { COMPLIANCE_STATUS_LABELS, type ComplianceStatus } from "@/lib/types";
 
 interface ComplianceChartProps {
   statusCounts: Record<string, number>;
@@ -11,6 +11,7 @@ const STATUS_COLORS: Record<string, string> = {
   PASS: "#22c55e",
   FAIL: "#ef4444",
   PENDING: "#eab308",
+  AI_PENDING: "#3b82f6",
   NOT_APPLICABLE: "#94a3b8",
   EXPIRED: "#f97316",
 };
@@ -19,7 +20,7 @@ export function ComplianceChart({ statusCounts }: ComplianceChartProps) {
   const data = Object.entries(statusCounts)
     .filter(([, count]) => count > 0)
     .map(([status, count]) => ({
-      name: COMPLIANCE_STATUS_LABELS[status] ?? status,
+      name: COMPLIANCE_STATUS_LABELS[status as ComplianceStatus] ?? status,
       value: count,
       color: STATUS_COLORS[status] ?? "#94a3b8",
     }));

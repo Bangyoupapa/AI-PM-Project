@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { del } from "@vercel/blob";
+import path from "path";
+import fs from "fs/promises";
 
 export const runtime = "nodejs";
 
 interface Params {
   params: Promise<{ id: string; docId: string }>;
+}
+
+function isRemoteUrl(storagePath: string) {
+  return storagePath.startsWith("https://") || storagePath.startsWith("http://");
 }
 
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -14,12 +19,24 @@ export async function GET(_req: NextRequest, { params }: Params) {
     const doc = await prisma.regulationDocument.findUnique({ where: { id: docId } });
     if (!doc) return NextResponse.json({ error: "找不到文件" }, { status: 404 });
 
-    // storagePath is now a Vercel Blob URL — redirect to it for download
-    return NextResponse.redirect(doc.storagePath, {
-      headers: {
-        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(doc.fileName)}`,
-      },
-    });
+    if (isRemoteUrl(doc.storagePath)) {
+      // Vercel Blob URL — redirect for download
+      return NextResponse.redirect(doc.storagePath, {
+        headers: {
+          "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(doc.fileName)}`,
+        },
+      });
+    } else {
+      // Local file
+      const filePath = path.join(process.cwd(), doc.storagePath);
+      const buffer = await fs.readFile(filePath);
+      return new NextResponse(buffer, {
+        headers: {
+          "Content-Type": doc.mimeType,
+          "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(doc.fileName)}`,
+        },
+      });
+    }
   } catch (error) {
     console.error("[GET /api/regulations/:id/documents/:docId]", error);
     return NextResponse.json({ error: "下載文件失敗" }, { status: 500 });
@@ -32,8 +49,13 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     const doc = await prisma.regulationDocument.findUnique({ where: { id: docId } });
     if (!doc) return NextResponse.json({ error: "找不到文件" }, { status: 404 });
 
-    // Delete from Vercel Blob storage
-    await del(doc.storagePath);
+    if (isRemoteUrl(doc.storagePath)) {
+      const { del } = await import("@vercel/blob");
+      await del(doc.storagePath);
+    } else {
+      const filePath = path.join(process.cwd(), doc.storagePath);
+      await fs.unlink(filePath).catch(() => { /* ignore if already gone */ });
+    }
 
     await prisma.regulationDocument.delete({ where: { id: docId } });
     return NextResponse.json({ success: true });

@@ -1,11 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import {
-  COMPLIANCE_STATUS_LABELS,
-  COMPLIANCE_STATUS_COLORS,
-  COMPONENT_CATEGORY_LABELS,
-  REGULATION_REGION_LABELS,
-} from "@/config";
+import { COMPONENT_CATEGORY_LABELS, REGULATION_REGION_LABELS } from "@/config";
+import { COMPLIANCE_STATUS_LABELS, COMPLIANCE_STATUS_COLORS, type ComplianceStatus } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -27,11 +23,11 @@ export function formatFileSize(bytes: number): string {
 }
 
 export function statusLabel(status: string): string {
-  return COMPLIANCE_STATUS_LABELS[status] ?? status;
+  return COMPLIANCE_STATUS_LABELS[status as ComplianceStatus] ?? status;
 }
 
 export function statusColor(status: string): string {
-  return COMPLIANCE_STATUS_COLORS[status] ?? "bg-gray-100 text-gray-600";
+  return COMPLIANCE_STATUS_COLORS[status as ComplianceStatus] ?? "bg-gray-100 text-gray-600";
 }
 
 export function categoryLabel(category: string): string {

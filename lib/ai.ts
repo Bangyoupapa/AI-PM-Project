@@ -13,6 +13,16 @@ export function getModel() {
   return openai("gpt-4o-mini");
 }
 
+export function getEmbeddingModel() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY 未設定");
+  const openai = createOpenAI({
+    apiKey,
+    organization: process.env.OPENAI_ORGANIZATION_ID,
+  });
+  return openai.embeddingModel("text-embedding-3-small");
+}
+
 export const SYSTEM_PROMPT = `你是一位專業的電池法規合規查詢助理，服務對象為研發、採購、QA 工程師。
 你的回答必須：
 1. 以繁體中文回答
