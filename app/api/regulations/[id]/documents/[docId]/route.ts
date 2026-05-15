@@ -20,9 +20,15 @@ export async function GET(_req: NextRequest, { params }: Params) {
     if (!doc) return NextResponse.json({ error: "找不到文件" }, { status: 404 });
 
     if (isRemoteUrl(doc.storagePath)) {
-      // Vercel Blob URL — redirect for download
-      return NextResponse.redirect(doc.storagePath, {
+      // Vercel Blob (private) — fetch server-side and stream to client
+      const { download } = await import("@vercel/blob");
+      const { body, headers } = await download(doc.storagePath, {
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+      const contentType = headers.get("content-type") ?? doc.mimeType;
+      return new NextResponse(body, {
         headers: {
+          "Content-Type": contentType,
           "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(doc.fileName)}`,
         },
       });
