@@ -46,7 +46,9 @@ export function DocumentUploadPanel({ regulationId, initialDocuments }: Document
       }
       const doc = await res.json();
       setDocuments((prev) => [doc, ...prev]);
-      toast.success("文件上傳成功");
+      toast.success("文件上傳成功，開始向量化…");
+      // Auto-trigger indexing; runs in background while user sees "向量化中" state
+      handleIndex(doc.id);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "上傳失敗");
     } finally {
@@ -107,7 +109,7 @@ export function DocumentUploadPanel({ regulationId, initialDocuments }: Document
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf"
           className="hidden"
           onChange={handleUpload}
         />
@@ -119,7 +121,7 @@ export function DocumentUploadPanel({ regulationId, initialDocuments }: Document
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="mb-2 h-8 w-8" />
-          <p className="text-sm">點擊或拖曳上傳 PDF / Word 文件</p>
+          <p className="text-sm">點擊或拖曳上傳 PDF 文件</p>
         </div>
       ) : (
         <ul className="space-y-2">

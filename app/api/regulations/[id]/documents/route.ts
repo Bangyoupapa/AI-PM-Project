@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { config } from "@/config";
-import { put } from "@vercel/blob";
+import path from "path";
+import fs from "fs/promises";
 
 export const runtime = "nodejs";
+
+const USE_BLOB = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -30,19 +33,33 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     const mimeType = file.type || "application/octet-stream";
     if (!(config.upload.allowedMimeTypes as readonly string[]).includes(mimeType)) {
-      return NextResponse.json({ error: "僅支援 PDF 或 Word 文件" }, { status: 400 });
+      return NextResponse.json({ error: "僅支援 PDF 文件" }, { status: 400 });
     }
 
-    const blob = await put(`regulations/${id}/${file.name}`, file, {
-      access: "public",
-      contentType: mimeType,
-    });
+    let storagePath: string;
+
+    if (USE_BLOB) {
+      const { put } = await import("@vercel/blob");
+      const blob = await put(`regulations/${id}/${file.name}`, file, {
+        access: "public",
+        contentType: mimeType,
+      });
+      storagePath = blob.url;
+    } else {
+      // Local fallback: save to uploads/ directory
+      const uploadDir = path.join(process.cwd(), "uploads", "regulations", id);
+      await fs.mkdir(uploadDir, { recursive: true });
+      const filePath = path.join(uploadDir, file.name);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      await fs.writeFile(filePath, buffer);
+      storagePath = `uploads/regulations/${id}/${file.name}`;
+    }
 
     const doc = await prisma.regulationDocument.create({
       data: {
         regulationId: id,
         fileName: file.name,
-        storagePath: blob.url,
+        storagePath,
         mimeType,
         sizeBytes: file.size,
       },

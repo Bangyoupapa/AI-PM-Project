@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ComplianceForm } from "./ComplianceForm";
 import { cn, statusLabel, statusColor, categoryLabel } from "@/lib/utils";
 import { toast } from "sonner";
-
-type ComplianceStatus = "PASS" | "FAIL" | "PENDING" | "NOT_APPLICABLE" | "EXPIRED";
+import type { ComplianceStatus } from "@/lib/types";
 type ComponentCategory = "CELL" | "BMS" | "HOUSING" | "CONNECTOR" | "ELECTROLYTE" | "SEPARATOR" | "ANODE" | "CATHODE" | "OTHER";
 
 interface Regulation {
@@ -28,6 +27,7 @@ interface ComplianceRecord {
   notes: string | null;
   testedBy: string | null;
   isAiSuggested: boolean;
+  aiSuggestedStatus: ComplianceStatus | null;
   aiReasoning: string | null;
 }
 
@@ -76,7 +76,10 @@ export function ComplianceMatrix({ components, regulations, initialRecords }: Co
       const res = await fetch(`/api/compliance/${record.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isAiSuggested: false }),
+        body: JSON.stringify({
+          status: record.aiSuggestedStatus ?? "PENDING",
+          isAiSuggested: false,
+        }),
       });
       if (!res.ok) throw new Error("確認失敗");
       const updated = await res.json() as ComplianceRecord;
@@ -205,7 +208,9 @@ export function ComplianceMatrix({ components, regulations, initialRecords }: Co
                 componentName={selected.componentName}
                 regulationCode={selected.regulationCode}
                 defaultValues={selected.existing ? {
-                  status: selected.existing.status,
+                  status: (selected.existing.status === "AI_PENDING"
+                    ? (selected.existing.aiSuggestedStatus ?? "PENDING")
+                    : selected.existing.status) as "PASS" | "FAIL" | "PENDING" | "NOT_APPLICABLE" | "EXPIRED",
                   testDate: selected.existing.testDate ?? undefined,
                   expiryDate: selected.existing.expiryDate ?? undefined,
                   testLab: selected.existing.testLab ?? undefined,
