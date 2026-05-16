@@ -39,6 +39,16 @@ _Avoid_: vectorizing (use only in UI labels), embedding (use as the artifact, no
 - A **Regulation** has one or more **Regulation Documents**
 - An **AI-Suggested Record** is a **Compliance Record** with `isAiSuggested = true` and an unconfirmed status
 
+**Regulation Alert（法規動態）**:
+A notification displayed on the Regulations page about a Regulation that may need attention. Two kinds: *expiry alert* (derived from `expiresAt` — yellow within 90 days, red within 30 days) and *news alert* (fetched from web search, stored in DB, refreshed daily by Cron). Not a compliance verdict.
+_Avoid_: warning, notification, update
+
+## Relationships
+
+- A **Regulation Alert** belongs to exactly one **Regulation**
+- A **Regulation** has at most 3 current **Regulation Alerts** of the news kind (older ones are replaced on each Cron run)
+- Expiry alerts are derived on-the-fly from `expiresAt`; they are never persisted
+
 ## Flagged ambiguities
 
 - "AI 合規分析結果" was ambiguous between an intermediate suggestion and a committed record — resolved: AI-Suggested Records are not official until human-confirmed.

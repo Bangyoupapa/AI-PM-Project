@@ -59,6 +59,7 @@ model Regulation {
   documents         RegulationDocument[]
   substanceLimits   SubstanceLimit[]
   complianceRecords ComplianceRecord[]
+  alerts            RegulationAlert[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -97,6 +98,20 @@ model RegulationChunk {
   createdAt DateTime @default(now())
 
   @@index([documentId])
+}
+
+model RegulationAlert {
+  id           String     @id @default(cuid())
+  regulationId String
+  regulation   Regulation @relation(fields: [regulationId], references: [id], onDelete: Cascade)
+
+  title       String
+  url         String
+  publishedAt DateTime?
+  fetchedAt   DateTime   @default(now())
+
+  @@index([regulationId])
+  @@index([fetchedAt])
 }
 
 model SubstanceLimit {
