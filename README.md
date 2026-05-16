@@ -11,6 +11,7 @@
 | 模組 | 功能 |
 |------|------|
 | **法規管理** | 新增/編輯法規、上傳 PDF 文件、設定物質限值、觸發向量化（RAG） |
+| **法規動態 feed** | 法規到期提醒（90 天黃色警告 / 30 天紅色危險）+ 每日自動抓取最新法規新聞（Tavily） |
 | **料件管理** | 手動新增或 Excel 批次匯入，含物質含量欄位（鉛/鎘/汞/六價鉻/SVHC） |
 | **合規矩陣** | 料件 × 法規 pivot table，點格子新增/編輯合規紀錄 |
 | **AI 自動分析** | 匯入 Excel 後自動呼叫 GPT 分析每筆料件對所有法規的合規狀態 |
@@ -110,6 +111,8 @@ npm run dev
 | `OPENAI_API_KEY` | GPT API | AI 功能需要 |
 | `OPENAI_ORGANIZATION_ID` | OpenAI 組織 ID | 選填 |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob 上傳法規文件 | 選填（無則存本地） |
+| `TAVILY_API_KEY` | 法規動態 feed 網路新聞搜尋 | 選填（無則不顯示新聞） |
+| `CRON_SECRET` | 保護 `/api/cron/*` 路由，Vercel Cron 呼叫時帶入 | Vercel 部署需要 |
 | `MOCK_AI` | `true` 啟用 mock 模式（server） | |
 | `NEXT_PUBLIC_MOCK_AI` | `true` 啟用 mock 模式（client UI） | |
 
@@ -131,7 +134,9 @@ components/
 └── parts/              # ComponentTable, ExcelImportWizard
 lib/
 ├── ai.ts               # LLM provider 統一出口
-├── rag/                # indexDocument + search
+├── alerts/             # classifyExpiry（到期urgency 分類純函式）
+├── compliance/         # verdictWriter（AI 建議 / 確認狀態機）
+├── rag/                # indexDocument、chunkText、search
 └── validations/        # Zod schemas
 prisma/
 ├── schema.prisma
