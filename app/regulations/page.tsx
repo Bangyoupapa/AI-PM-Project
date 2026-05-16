@@ -23,7 +23,6 @@ export default async function RegulationsPage() {
     prisma.regulationAlert.findMany({
       orderBy: { fetchedAt: "desc" },
       include: { regulation: { select: { code: true } } },
-      take: 9,
     }),
   ]);
 
@@ -70,9 +69,9 @@ export default async function RegulationsPage() {
             <div className="rounded-lg border bg-muted/30 px-4 py-3">
               <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <Newspaper className="h-3.5 w-3.5" />
-                法規動態（每日更新）
+                法規動態（每日更新）· {newsAlerts.length} 則
               </div>
-              <ul className="space-y-1.5">
+              <ul className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
                 {newsAlerts.map((alert) => (
                   <li key={alert.id} className="flex items-start gap-2 text-sm">
                     <span className="mt-0.5 shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
