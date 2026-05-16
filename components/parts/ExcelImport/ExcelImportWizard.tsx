@@ -111,7 +111,7 @@ export function ExcelImportWizard() {
     }
   }
 
-  const categoryLabel = (cat: string) => COMPONENT_CATEGORY_LABELS[cat] ?? cat;
+  const categoryLabel = (cat: string) => COMPONENT_CATEGORY_LABELS[cat as import("@/lib/types").ComponentCategory] ?? cat;
   const steps: Step[] = ["upload", "preview", "analyzing", "done"];
   const stepLabels: Record<Step, string> = { upload: "上傳檔案", preview: "確認資料", analyzing: "AI 分析", done: "完成" };
 

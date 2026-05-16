@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { embed } from "ai";
+import { getEmbeddingModel, MOCK_MODE } from "@/lib/ai";
 
 export interface ChunkResult {
   id: string;
@@ -19,12 +21,11 @@ interface RawChunkRow {
   regulationCode: string;
 }
 
-export async function searchChunks(
-  queryEmbedding: number[],
+export async function searchByQuery(
+  query: string,
   topK = 5
 ): Promise<ChunkResult[]> {
-  if (queryEmbedding.length === 0) {
-    // Fallback when no embedding provided (mock mode)
+  if (MOCK_MODE) {
     const chunks = await prisma.regulationChunk.findMany({
       take: topK,
       include: {
@@ -42,7 +43,8 @@ export async function searchChunks(
     }));
   }
 
-  const vectorLiteral = Prisma.raw(`'[${queryEmbedding.join(",")}]'::vector`);
+  const { embedding } = await embed({ model: getEmbeddingModel(), value: query });
+  const vectorLiteral = Prisma.raw(`'[${embedding.join(",")}]'::vector`);
 
   const rows = await prisma.$queryRaw<RawChunkRow[]>`
     SELECT

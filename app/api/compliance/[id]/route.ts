@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { upsertComplianceSchema } from "@/lib/validations/compliance.schema";
+import { buildConfirmUpdate } from "@/lib/compliance/verdictWriter";
+import type { ComplianceStatus } from "@/lib/types";
 
 interface Params {
   params: Promise<{ id: string }>;
@@ -33,16 +35,29 @@ export async function PUT(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
     const { testDate, expiryDate, ...rest } = parsed.data;
-    const isAiSuggested = typeof body.isAiSuggested === "boolean" ? body.isAiSuggested : undefined;
+    const isConfirmingAi = typeof body.isAiSuggested === "boolean" && body.isAiSuggested === false;
+
+    let aiUpdate = {};
+    if (isConfirmingAi && rest.status) {
+      const existing = await prisma.complianceRecord.findUnique({
+        where: { id },
+        select: { isAiSuggested: true, aiSuggestedStatus: true },
+      });
+      if (existing) {
+        aiUpdate = buildConfirmUpdate(
+          { isAiSuggested: existing.isAiSuggested, aiSuggestedStatus: existing.aiSuggestedStatus as ComplianceStatus | null },
+          rest.status as ComplianceStatus
+        );
+      }
+    }
+
     const record = await prisma.complianceRecord.update({
       where: { id },
       data: {
         ...rest,
         ...(testDate !== undefined ? { testDate: testDate ? new Date(testDate) : null } : {}),
         ...(expiryDate !== undefined ? { expiryDate: expiryDate ? new Date(expiryDate) : null } : {}),
-        ...(isAiSuggested !== undefined ? { isAiSuggested } : {}),
-        // Clear AI suggestion fields when a human confirms or overrides
-        ...(isAiSuggested === false ? { aiSuggestedStatus: null } : {}),
+        ...aiUpdate,
       },
     });
     return NextResponse.json(record);

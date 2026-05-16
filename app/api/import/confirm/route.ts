@@ -1,26 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { importRowSchema } from "@/lib/validations/component.schema";
 import { z } from "zod";
 
 const confirmSchema = z.object({
   fileName: z.string(),
   importedBy: z.string().optional(),
-  rows: z.array(
-    z.object({
-      partNumber:   z.string(),
-      name:         z.string(),
-      nameEn:       z.string().optional(),
-      category:     z.enum(["CELL", "BMS", "HOUSING", "CONNECTOR", "ELECTROLYTE", "SEPARATOR", "ANODE", "CATHODE", "OTHER"]),
-      supplierName: z.string().optional(),
-      material:     z.string().optional(),
-      description:  z.string().optional(),
-      leadPpm:      z.number().optional(),
-      cadmiumPpm:   z.number().optional(),
-      mercuryPpm:   z.number().optional(),
-      chromiumPpm:  z.number().optional(),
-      hasSvhc:      z.boolean().optional(),
-    })
-  ),
+  rows: z.array(importRowSchema),
 });
 
 export async function POST(req: NextRequest) {
@@ -32,8 +18,6 @@ export async function POST(req: NextRequest) {
     }
 
     const { fileName, importedBy, rows } = parsed.data;
-    let successRows = 0;
-    const errors: { row: number; message: string }[] = [];
     const importedComponentIds: string[] = [];
 
     const log = await prisma.componentImportLog.create({
@@ -46,12 +30,11 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    for (let i = 0; i < rows.length; i++) {
-      const { supplierName, ...rest } = rows[i];
-      try {
+    await prisma.$transaction(async (tx) => {
+      for (const { supplierName, ...rest } of rows) {
         let supplierId: string | undefined;
         if (supplierName?.trim()) {
-          const supplier = await prisma.supplier.upsert({
+          const supplier = await tx.supplier.upsert({
             where: { name: supplierName.trim() },
             create: { name: supplierName.trim() },
             update: {},
@@ -59,29 +42,26 @@ export async function POST(req: NextRequest) {
           supplierId = supplier.id;
         }
 
-        const component = await prisma.component.upsert({
+        const component = await tx.component.upsert({
           where: { partNumber: rest.partNumber },
           create: { ...rest, supplierId, importBatchId: log.id },
           update: { ...rest, supplierId },
         });
         importedComponentIds.push(component.id);
-        successRows++;
-      } catch (err) {
-        errors.push({ row: i + 1, message: err instanceof Error ? err.message : "未知錯誤" });
       }
-    }
+    });
 
     await prisma.componentImportLog.update({
       where: { id: log.id },
-      data: { successRows, failedRows: errors.length, errors },
+      data: { successRows: rows.length, failedRows: 0 },
     });
 
     return NextResponse.json({
       success: true,
-      successRows,
-      failedRows: errors.length,
-      errors,
-      componentIds: importedComponentIds,  // 回傳給前端觸發 AI 分析
+      successRows: rows.length,
+      failedRows: 0,
+      errors: [],
+      componentIds: importedComponentIds,
     });
   } catch (error) {
     console.error("[POST /api/import/confirm]", error);

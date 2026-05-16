@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MOCK_MODE, getMockResponse, getModel, getEmbeddingModel, SYSTEM_PROMPT } from "@/lib/ai";
-import { generateText, embed } from "ai";
+import { MOCK_MODE, getMockResponse, getModel, SYSTEM_PROMPT } from "@/lib/ai";
+import { generateText } from "ai";
 import { config } from "@/config";
 
 export const runtime = "nodejs";
@@ -15,13 +15,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ role: "assistant", content: text });
     }
 
-    // RAG: embed the query then retrieve the most relevant chunks
-    const { searchChunks } = await import("@/lib/rag/search");
-    const { embedding: queryEmbedding } = await embed({
-      model: getEmbeddingModel(),
-      value: lastMessage,
-    });
-    const chunks = await searchChunks(queryEmbedding, config.rag.topK);
+    const { searchByQuery } = await import("@/lib/rag/search");
+    const chunks = await searchByQuery(lastMessage, config.rag.topK);
     const context = chunks.length > 0
       ? chunks.map((c) => `[${c.regulationCode} / ${c.fileName}]\n${c.content}`).join("\n\n---\n\n")
       : "（目前尚無向量化的法規文件，請先上傳並向量化法規 PDF）";

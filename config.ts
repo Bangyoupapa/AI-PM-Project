@@ -21,17 +21,7 @@ export const config = {
   },
 } as const;
 
-export const COMPONENT_CATEGORY_LABELS: Record<string, string> = {
-  CELL: "電芯",
-  BMS: "電池管理系統",
-  HOUSING: "外殼",
-  CONNECTOR: "接頭",
-  ELECTROLYTE: "電解液",
-  SEPARATOR: "隔離膜",
-  ANODE: "負極",
-  CATHODE: "正極",
-  OTHER: "其他",
-};
+export { COMPONENT_CATEGORY_LABELS } from "@/lib/types";
 
 export { COMPLIANCE_STATUS_LABELS, COMPLIANCE_STATUS_COLORS } from "@/lib/types";
 

@@ -2,6 +2,20 @@ import { $Enums } from "@prisma/client";
 
 export type ComplianceStatus = $Enums.ComplianceStatus;
 
+export type ComponentCategory = $Enums.ComponentCategory;
+
+export const COMPONENT_CATEGORY_LABELS: Record<ComponentCategory, string> = {
+  CELL: "電芯",
+  BMS: "電池管理系統",
+  HOUSING: "外殼",
+  CONNECTOR: "接頭",
+  ELECTROLYTE: "電解液",
+  SEPARATOR: "隔離膜",
+  ANODE: "負極",
+  CATHODE: "正極",
+  OTHER: "其他",
+};
+
 // Compile-time exhaustiveness: Record<ComplianceStatus, T> forces every
 // status to have an entry — adding a new enum value breaks the build here
 // rather than silently missing it in a UI somewhere.

@@ -43,7 +43,7 @@ async function main() {
     const blob = await put(
       `regulations/${doc.regulationId}/${doc.fileName}`,
       buffer,
-      { access: "private", contentType: doc.mimeType }
+      { access: "public", contentType: doc.mimeType, addRandomSuffix: false, allowOverwrite: true }
     );
 
     await prisma.regulationDocument.update({

@@ -31,7 +31,7 @@ export function statusColor(status: string): string {
 }
 
 export function categoryLabel(category: string): string {
-  return COMPONENT_CATEGORY_LABELS[category] ?? category;
+  return COMPONENT_CATEGORY_LABELS[category as import("@/lib/types").ComponentCategory] ?? category;
 }
 
 export function regionLabel(region: string): string {
