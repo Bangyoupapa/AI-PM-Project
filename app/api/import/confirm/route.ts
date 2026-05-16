@@ -18,49 +18,53 @@ export async function POST(req: NextRequest) {
     }
 
     const { fileName, importedBy, rows } = parsed.data;
+    let successRows = 0;
+    const errors: { row: number; message: string }[] = [];
     const importedComponentIds: string[] = [];
 
     const log = await prisma.componentImportLog.create({
-      data: {
-        fileName,
-        importedBy,
-        totalRows: rows.length,
-        successRows: 0,
-        failedRows: 0,
-      },
+      data: { fileName, importedBy, totalRows: rows.length, successRows: 0, failedRows: 0 },
     });
 
-    await prisma.$transaction(async (tx) => {
-      for (const { supplierName, ...rest } of rows) {
-        let supplierId: string | undefined;
-        if (supplierName?.trim()) {
-          const supplier = await tx.supplier.upsert({
-            where: { name: supplierName.trim() },
-            create: { name: supplierName.trim() },
-            update: {},
+    for (let i = 0; i < rows.length; i++) {
+      const { supplierName, ...rest } = rows[i];
+      try {
+        // Per-row transaction: supplier + component upsert are atomic per row,
+        // but a failure in one row doesn't roll back the others.
+        const componentId = await prisma.$transaction(async (tx) => {
+          let supplierId: string | undefined;
+          if (supplierName?.trim()) {
+            const supplier = await tx.supplier.upsert({
+              where: { name: supplierName.trim() },
+              create: { name: supplierName.trim() },
+              update: {},
+            });
+            supplierId = supplier.id;
+          }
+          const component = await tx.component.upsert({
+            where: { partNumber: rest.partNumber },
+            create: { ...rest, supplierId, importBatchId: log.id },
+            update: { ...rest, supplierId },
           });
-          supplierId = supplier.id;
-        }
-
-        const component = await tx.component.upsert({
-          where: { partNumber: rest.partNumber },
-          create: { ...rest, supplierId, importBatchId: log.id },
-          update: { ...rest, supplierId },
+          return component.id;
         });
-        importedComponentIds.push(component.id);
+        importedComponentIds.push(componentId);
+        successRows++;
+      } catch (err) {
+        errors.push({ row: i + 1, message: err instanceof Error ? err.message : "未知錯誤" });
       }
-    });
+    }
 
     await prisma.componentImportLog.update({
       where: { id: log.id },
-      data: { successRows: rows.length, failedRows: 0 },
+      data: { successRows, failedRows: errors.length, errors },
     });
 
     return NextResponse.json({
       success: true,
-      successRows: rows.length,
-      failedRows: 0,
-      errors: [],
+      successRows,
+      failedRows: errors.length,
+      errors,
       componentIds: importedComponentIds,
     });
   } catch (error) {
